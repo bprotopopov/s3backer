@@ -668,7 +668,6 @@ cloudbacker_create_store(struct cb_config *conf)
          conf->localStore_io.block_size = conf->block_size;
          conf->localStore_io.log = conf->log;
          conf->localStore_io.prefix = strdup(conf->http_io.prefix);
-         (*conf->log)(LOG_DEBUG, "conf->localStore_io.prefix %s",conf->localStore_io.prefix);
          if((local_io_store = local_io_create(&conf->localStore_io, store, conf->fuse_ops.read_only)) == NULL)
              goto fail_with_errno;
          store = local_io_store;
