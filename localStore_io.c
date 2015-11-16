@@ -26,8 +26,6 @@
 #include <linux/fs.h>
 #include <sys/ioctl.h>
 
-#define BITS_IN_CHAR                    8
-#define MAX_PREFIX_LENGTH               128 
 #define DEVICE_INITIALIZED              0
 #define DEVICE_NOT_INITIALIZED          1
 #define DEVICE_CANT_BE_USED             2
@@ -124,24 +122,20 @@ local_io_create(struct localStore_io_conf *config, struct cloudbacker_store *inn
             u_int *bitmap;
 
             int num_blocks = priv->handle->metadata.size / priv->handle->metadata.blocksize;
-            nwords = (num_blocks + (sizeof(*bitmap) * BITS_IN_CHAR) - 1) / (sizeof(*bitmap) * BITS_IN_CHAR);
+            nwords = (num_blocks + (sizeof(*bitmap) * 8) - 1) / (sizeof(*bitmap) * 8);
             if ((priv->handle->local_bitmap = calloc(nwords, sizeof(*bitmap))) == NULL)
                 err(1, "calloc");
 
             /* metadata read from meta data region is valid, now read the bitmap from device into memory */
             ret = read_bitmap(priv);
-            if(ret != 0){
-                 r = errno;
+            if(ret != 0)
                 (*config->log)(LOG_DEBUG, "read_bitmap returned = %d", ret);
-                goto fail3;
-            }
         }
         else if(ret == DEVICE_NOT_INITIALIZED){
 
             /* initialize metadata region */
             ret = local_io_set_config(priv);
             if(ret != 0){
-                r = errno;
                 (*config->log)(LOG_ERR, "failed to write meta data region to block device file.");
                 goto fail3;
             }
@@ -150,28 +144,21 @@ local_io_create(struct localStore_io_conf *config, struct cloudbacker_store *inn
             u_int *bitmap;
 
             int num_blocks = priv->handle->metadata.size / priv->handle->metadata.blocksize;
-            nwords = (num_blocks + (sizeof(*bitmap) * BITS_IN_CHAR) - 1) / (sizeof(*bitmap) * BITS_IN_CHAR);
+            nwords = (num_blocks + (sizeof(*bitmap) * 8) - 1) / (sizeof(*bitmap) * 8);
             if ((priv->handle->local_bitmap = calloc(nwords, sizeof(*bitmap))) == NULL)
                 err(1, "calloc");
 
+
             /* initialize bit map */
             ret = write_bitmap(priv);
-            if(ret != 0){
-                 r = errno;
+            if(ret != 0)
                 (*config->log)(LOG_DEBUG, "write_bitmap returned = %d", ret);
-                goto fail3;
-            }
 
         }
         else{
             goto fail3;
         }
     }
-    else{
-         r = errno;
-         goto fail2;
-    }
-
     pthread_mutex_unlock(&priv->mutex); 
     return cb;
 
@@ -265,7 +252,7 @@ local_io_write_block(struct cloudbacker_store *cb, cb_block_t block_num, const v
     offset = (priv->handle->metadata.blocksize *(block_num+1));
 
     if (priv->handle->local_bitmap != NULL) {
-        const int bits_per_word = sizeof(*priv->handle->local_bitmap) * BITS_IN_CHAR;
+        const int bits_per_word = sizeof(*priv->handle->local_bitmap) * 8;
         const int word = block_num / bits_per_word;
         const int bit = 1 << (block_num % bits_per_word);
 
@@ -342,7 +329,7 @@ local_io_read_block(struct cloudbacker_store *const cb, cb_block_t block_num, vo
 
     pthread_mutex_lock(&priv->mutex);
     if (priv->handle->local_bitmap != NULL) {
-        const int bits_per_word = (sizeof(*priv->handle->local_bitmap) * BITS_IN_CHAR);
+        const int bits_per_word = sizeof(*priv->handle->local_bitmap) * 8;
         const int word = block_num / bits_per_word;
         const int bit = 1 << (block_num % bits_per_word);
 
@@ -487,24 +474,19 @@ local_io_set_config(struct local_io_private *const priv)
     priv->handle->metadata.bitmap_start_offset = sizeof(priv->handle->metadata);
 
     int num_blocks = priv->handle->metadata.size / priv->handle->metadata.blocksize;
-    priv->handle->metadata.bitmap_size = ((num_blocks / BITS_IN_CHAR)*sizeof(*priv->handle->local_bitmap));
+    priv->handle->metadata.bitmap_size = ((num_blocks / 8)*sizeof(*priv->handle->local_bitmap));
 
-    /* we need conf->num_blocks bits to set the bits, which is conf->num_blocks/BITS_IN_CHAR bytes */
+    /* we need conf->num_blocks bits to set the bits, which is conf->num_blocks/8 bytes */
     priv->handle->metadata.data_start_block_offset = METADATA_BLOCK_OFFSET + sizeof(priv->handle->metadata) + priv->handle->metadata.bitmap_size;
 
-    if(strlen(config->prefix) > MAX_PREFIX_LENGTH){
-        (*config->log)(LOG_ERR, "max prefix length allowed is %d", MAX_PREFIX_LENGTH);
+    if(strlen(config->prefix) > 128)
         return EINVAL;
-    }
-
     priv->handle->metadata.app_prefix_len = strlen(config->prefix);
     if(priv->handle->metadata.app_prefix_len > 0)
          strncpy(priv->handle->metadata.app_prefix, config->prefix, strlen(config->prefix));
     else
          memset(priv->handle->metadata.app_prefix,0,sizeof(priv->handle->metadata.app_prefix));
 
-    (*config->log)(LOG_INFO, "write meta data region block");
-    
     /* validate given block device before setting the configuration */
     r = local_io_validate_config(priv);
     if(r == DEVICE_CANT_BE_USED)
@@ -514,12 +496,12 @@ local_io_set_config(struct local_io_private *const priv)
     r = blk_dev_write(&(priv->handle->metadata), priv->handle, METADATA_BLOCK_OFFSET, sizeof(priv->handle->metadata));
     if((r == 0) || (r < 0 ) || ((r > 0) && (r != sizeof(priv->handle->metadata)))){
        errcode = errno;
-       (*config->log)(LOG_ERR, "failed to write meta data region block: %s", strerror(errcode));
+       (*config->log)(LOG_ERR, "failed to write  meta data region block: %s", strerror(errcode));
        return errcode;
-    }
+   }
 
-    (*config->log)(LOG_INFO, "Successfully written block device meta data region.");
-    return 0;
+   (*config->log)(LOG_INFO, "Successfully written block device meta data region.");
+   return 0;
 }
 
 static blk_dev_handle_t 
@@ -555,12 +537,7 @@ local_io_get_config(struct local_io_private *const priv)
 
     // read meta data region or like super block
     r = blk_dev_read((char *)&(priv->handle->metadata), priv->handle, METADATA_BLOCK_OFFSET, sizeof(priv->handle->metadata));
-    if(r==0){
-        errcode = errno;
-        (*config->log)(LOG_ERR, "No data to read in meta data region of block device file: %s", strerror(errcode));
-        return priv->handle;
-    }
-    if((r < 0 ) || ((r > 0) && (r != sizeof(priv->handle->metadata)))){
+    if((r == 0) || (r < 0 ) || ((r > 0) && (r != sizeof(priv->handle->metadata)))){
         errcode = errno;
         (*config->log)(LOG_ERR, "Error reading meta data region of block device file: %s", strerror(errcode));
         return NULL;
@@ -620,7 +597,7 @@ write_bitmap(struct local_io_private *const priv)
     int num_blocks =  bd->metadata.size / bd->metadata.blocksize;
     int block = 0;
     for(block=0; block< num_blocks; block++){
-        const int bits_per_word = sizeof(*bd->local_bitmap) * BITS_IN_CHAR;
+        const int bits_per_word = sizeof(*bd->local_bitmap) * 8;
         const int word = block / bits_per_word;
 
         r = blk_dev_write((char *)&(priv->handle->local_bitmap[word]), bd,
@@ -654,7 +631,7 @@ read_bitmap(struct local_io_private *const priv)
     int num_blocks =  bd->metadata.size / bd->metadata.blocksize;
     int block = 0;
     for(block=0; block< num_blocks; block++){
-        const int bits_per_word = sizeof(*bd->local_bitmap) * BITS_IN_CHAR;
+        const int bits_per_word = sizeof(*bd->local_bitmap) * 8;
         const int word = block / bits_per_word;
 
         r = blk_dev_read((char *)&(priv->handle->local_bitmap[word]), bd, 
