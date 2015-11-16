@@ -32,9 +32,10 @@ noinst_HEADERS=     cloudbacker.h \
 			erase.h \
 			fuse_ops.h \
 			hash.h \
-                        gsb_http_io.h \
-                        s3b_http_io.h \
-			reset.h \
+                       gsb_http_io.h \
+                       s3b_http_io.h \
+                       localStore_io.h \
+                        reset.h \
 			test_io.h \
 			cloudbacker_config.h \
 			auth_conf.h \
@@ -58,7 +59,9 @@ cloudbacker_SOURCES=   main.c \
 		    hash.c \
 		    reset.c \
 		    cloudbacker_config.c \
-		    test_io.c \
+                    localStore_io.c \
+                    block_device.c \
+                    test_io.c \
 		    gitrev.c \
 		    http_gio.c \
                    gsb_http_io.c \
@@ -73,7 +76,9 @@ tester_SOURCES=     tester.c \
 		    hash.c \
 		    reset.c \
 		    cloudbacker_config.c \
-		    test_io.c \
+                    localStore_io.c \
+                     block_device.c \
+                     test_io.c \
 		    gitrev.c \
 		    http_gio.c \
                    gsb_http_io.c \
