@@ -156,6 +156,7 @@ local_io_create(struct localStore_io_conf *config, struct cloudbacker_store *inn
 
         }
         else{
+            r = EINVAL; 
             goto fail3;
         }
     }
