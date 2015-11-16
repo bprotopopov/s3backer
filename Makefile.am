@@ -34,7 +34,6 @@ noinst_HEADERS=     cloudbacker.h \
 			hash.h \
                        gsb_http_io.h \
                        s3b_http_io.h \
-                       block_device.c \
                        localStore_io.h \
                         reset.h \
 			test_io.h \
