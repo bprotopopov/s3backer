@@ -1,0 +1,4 @@
+# Invoked in configure.ac, used to set package version
+#!/bin/bash
+
+echo -n $(git describe | cut -f1 -d'-')

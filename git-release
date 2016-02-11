@@ -1,0 +1,4 @@
+# Invoked in configure.ac, used to set package release
+#!/bin/bash
+
+echo -n $(git describe | cut -f2-3 -d'-' | tr -s '-' '_')

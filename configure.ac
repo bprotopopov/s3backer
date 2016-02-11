@@ -19,13 +19,20 @@
 # 02110-1301, USA.
 #
 
-AC_INIT([cloudbacker FUSE filesystem backed by Amazon S3], [1.0.0], [https://github.com/archiecobbs/cloudbacker], [cloudbacker])
+AC_INIT([cloudbacker],
+        m4_esyscmd([./git-version]),
+	[https://github.com/bprotopopov/s3backer],
+	[cloudbacker])
 AC_CONFIG_AUX_DIR(scripts)
 AM_INIT_AUTOMAKE
 dnl AM_MAINTAINER_MODE
 AC_PREREQ(2.59)
 AC_PREFIX_DEFAULT(/usr)
 AC_PROG_MAKE_SET
+
+# Package release based on git version info
+AC_SUBST([PACKAGE_RELEASE], m4_esyscmd([./git-release]))
+AC_SUBST([PACKAGE_SUMMARY], ["FUSE-based single file backing store via Amazon S3 and GCS"])
 
 [CFLAGS="-g -O3 -pipe -Wall -Waggregate-return -Wcast-align -Wchar-subscripts -Wcomment -Wformat -Wimplicit -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wno-long-long -Wparentheses -Wpointer-arith -Wredundant-decls -Wreturn-type -Wswitch -Wtrigraphs -Wuninitialized -Wunused -Wwrite-strings -Wshadow -Wstrict-prototypes -Wcast-qual $CFLAGS"]
 AC_SUBST(CFLAGS)

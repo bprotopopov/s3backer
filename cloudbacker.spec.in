@@ -14,11 +14,11 @@
 # under the License.
 # 
 
-Name:           cloudbacker
+Name:           @PACKAGE_NAME@
 Version:        @PACKAGE_VERSION@
-Release:        1
+Release:        @PACKAGE_RELEASE@
 License:        GNU General Public License, Version 2
-Summary:        FUSE-based single file backing store via Amazon S3
+Summary:        @PACKAGE_SUMMARY@
 Group:          System/Filesystems
 Source:         %{name}-%{version}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-root
